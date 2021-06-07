@@ -1,34 +1,39 @@
-version: '3'
+version: '3.2'
 
 services:
-
-    # mysql service
-    mysql_db:
-        image: mysql:${MYSQL_VERSION}
-        container_name: mysql_db
-        environment:
-            MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASS}
-            MYSQL_DATABASE: ${MYSQL_DB_NAME}
-            MYSQL_USER: ${MYSQL_DB_USER}
-            MYSQL_PASSWORD: ${MYSQL_PASS}
-        ports:
-            - "6033:6033"
-        volumes:
-            - dbdata:/var/lib/mysql
-
-    # phpmyadmin service
-    phpmyadmin:
-        image: phpmyadmin:${PHPMYADMIN_VERSION}
-        container_name: phpmyadmin_app
-        links:
-            - mysql_db
-        environment:
-            PMA_HOST: mysql_db
-            PMA_PORT: 6033
-            PMA_ARBITRARY: 1
+    database:
+        image: mysql:8.0
+        container_name: mysql
         restart: always
         ports:
-            - 8081:8080
+            - '6603:3306'
+        environment:
+            MYSQL_ROOT_PASSWORD: HEY #${MYSQL_ROOT_PASS}
+        networks: 
+            backend:
+                # ipv4_address: 172.16.100.2
 
-volumes:    
-    dbdata:
+
+    phpmyadmin:
+        depends_on:
+            - database
+        image: phpmyadmin/phpmyadmin
+        container_name: phpmyadmin
+        restart: always
+        network_mode: host
+        environment:
+            PMA_HOST: database
+            PMA_ARBITRARY: 1
+            MYSQL_ROOT_PASSWORD: HEY #${MYSQL_ROOT_PASS}
+        volumes: 
+            - ./shared:/app
+        ports:
+            - '8080:80'
+        networks: 
+            backend:
+networks:
+    backend:
+        ipam:
+            driver: default
+            config:
+                - subnet: 172.16.100.0/24
